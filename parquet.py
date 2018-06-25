@@ -14,18 +14,13 @@ import sys,os
 
 Order=5
 I, S, C, R, L, U, Gamma={}, {}, {}, {}, {}, {}, {}
-# I[1]=[(0,1,-1,-2),(2,3,-1,-2),(4,5,-1,-2),(6,7,-1,-2),(8,9,-1,-2),(10,11,-1,-2)]
-I[1]=[(0,1,-1,-2),(2,3,-1,-2),(4,5,-1,-2),(6,7,-1,-2),(8,9,-1,-2)]
-# I[1]=[(0,1,-1,-2),(2,3,-1,-2),(4,5,-1,-2),(6,7,-1,-2)]
-# I[1]=[(0,1,-1,-2),(2,3,-1,-2),(4,5,-1,-2)]
-# I[1]=[(0,1,-1,-2), (2,3,-1,-2)]
-# I[1]=[(0,1,-1,-2)]
-I[2]=[]
-I[3]=[]
-I[4]=[]
-I[5]=[]
-I[6]=[]
-I[7]=[]
+
+for i in range(1,Order+1):
+    I[i]=[]
+
+for i in range(Order):
+    I[1].append((i*2,i*2+1,-1,-2))
+
 S[1], C[1], R[1], L[1], U[1]=[], [], [], [], []
 Gamma[1]=I[1]
 
@@ -127,11 +122,6 @@ def Operation(Type, orderL, orderR):
                     
                 Type[order].append(tuple(new))
 
-                # VerTable[typeindex, order-1, new[0]]=Index
-                # VerLeg.append([new[0], new[1], new.index(LOUT), new.index(ROUT)])
-                # LIndex=VerTable[FindIndex(ldiag, orderL), orderL-1, ldiag[0]]
-                # RIndex=VerTable[FindIndex(gamma, orderR), orderR-1, gamma[0]]
-                # VerMap.append((LIndex, RIndex))
                 NewVer=(typeindex, order-1, GetVer(new))
                 if not VerDict.has_key(NewVer):
                     VerDict[NewVer]=[]
