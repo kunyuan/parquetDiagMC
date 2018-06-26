@@ -12,7 +12,7 @@ import sys,os
 # r_in ---> Per[0]
 # l_out=-1, r_out=-2
 
-Order=5
+Order=4
 I, S, C, R, L, U, Gamma={}, {}, {}, {}, {}, {}, {}
 
 for i in range(1,Order+1):
@@ -34,26 +34,26 @@ VerMap={}
 VerIndex=0
 
 def GetVer(diag):
-    return (diag[0], diag[1], diag.index(-1), diag.index(-2))
+    return (diag[0], diag[1], diag.index(-1)+diag[0], diag.index(-2)+diag[0])
 
 for e in I[1]:
-    VerDict[(0, 0, GetVer(e))]=[]
-    VerMap[(0,0,GetVer(e))]=(0,0,VerIndex)
+    VerDict[(1, 0, GetVer(e))]=[]
+    VerMap[(1,0,GetVer(e))]=(1,0,VerIndex)
     VerIndex+=1
 
 def FindIndex(diag, order):
     if diag in I[order]:
-        return 0
-    if diag in S[order]:
         return 1
-    if diag in C[order]:
+    if diag in S[order]:
         return 2
-    if diag in R[order]:
+    if diag in C[order]:
         return 3
-    if diag in L[order]:
+    if diag in R[order]:
         return 4
-    if diag in U[order]:
+    if diag in L[order]:
         return 5
+    if diag in U[order]:
+        return 6
 
 def Iterate(Type, order):
     for l in range(1, order):
@@ -89,27 +89,27 @@ def Operation(Type, orderL, orderR):
                     new[new_l_out]=gamma[LIN]
                     new[new_r_out]=gamma[RIN]
                     new+=rhalf
-                    typeindex=1
+                    typeindex=2
                 elif Type is C:
                     new[RIN]=gamma[RIN] #r_in of new is r_in of the gamma
                     new[new_r_out]=gamma[LIN] #r_out of ldiag is redirected to gamma l_in
                     rhalf[rhalf_l_out]=ldiag[RIN] #l_out of gamma is to ldiag r_in
                     new+=rhalf
-                    typeindex=2
+                    typeindex=3
                 elif Type is R:
                     new[RIN]=gamma[RIN]
                     new[new_r_out]=gamma[LIN]
                     rhalf[rhalf_r_out]=ldiag[RIN]
                     rhalf[rhalf_l_out]=ROUT
                     new+=rhalf
-                    typeindex=3
+                    typeindex=4
                 elif Type is L:
                     new[RIN]=gamma[RIN]
                     new[new_l_out]=gamma[LIN]
                     rhalf[rhalf_l_out]=ldiag[RIN]
                     new[new_r_out]=LOUT
                     new+=rhalf
-                    typeindex=4
+                    typeindex=5
                 elif Type is U:
                     new[LIN]=ldiag[LIN]
                     new[RIN]=gamma[RIN]
@@ -118,7 +118,7 @@ def Operation(Type, orderL, orderR):
                     rhalf[rhalf_l_out]=LOUT
                     rhalf[rhalf_r_out]=ldiag[RIN]
                     new+=rhalf
-                    typeindex=5
+                    typeindex=6
                     
                 Type[order].append(tuple(new))
 
@@ -192,16 +192,77 @@ def Test(Collection):
         print "Elements are not unique!\n", Collection
         sys.exit(0)
 
+def TestConnection(BuildTree, VerTable, Index2Ver):
+    order=VerTable.shape[0]
+    VerNum=BuildTree.shape[0]
+    BranchNum=BuildTree.shape[1]
+    WeightTable=np.zeros(VerNum)
+
+    #initialize all first order vertex with 1
+    OperNum=0
+    for i in range(VerNum):
+        index=VerTable[0,i]
+        if index<0:
+            break
+        WeightTable[i]=1
+        OperNum+=1
+
+    for o in range(1, order):
+        # print "Order {0}".format(o+1)
+        Weight=0
+        for i in range(VerNum):
+            index=VerTable[o, i]
+            if index<0:
+                break
+            # print "{0} with {1}".format(index, Index2Ver[index])
+            WeightTable[index]=0.0
+            for b in range(BranchNum):
+                lver=BuildTree[index, b, 1] 
+                rver=BuildTree[index, b, 2] 
+                if lver<0 or rver<0:
+                    break
+                # print "left {0}, right {1}: {2}x{3}".format(lver, rver, WeightTable[lver], WeightTable[rver])
+                WeightTable[index]+=WeightTable[lver]*WeightTable[rver]
+                OperNum+=1
+            Weight+=WeightTable[index]
+        print "Order {0} total Weight: {1}\n".format(o+1, Weight)
+
+    print "Operation Num: {0}".format(OperNum)
+    # print WeightTable
+
 def Compress(VerDict):
     VerDictSimple={}
+    VerNum=len(VerDict.keys())
+    BranchNum=max([len(e) for e in VerDict.values()])
+    print BranchNum
+    Index2Ver=np.zeros((VerNum, 4), dtype=int) #l_in, r_in, l_out, r_out
+    BuildTree=np.zeros((VerNum, BranchNum, 3), dtype=int) #VerIndex, BranchIndex, Type/LeftVer/RightVer
+    BuildTree-=1
+    VerTable=np.zeros((Order, VerNum), dtype=int)
+    VerTable-=1
+
+    # for k in sorted(VerDict.keys(), key = lambda x: x[1]):
+    for k in VerMap.keys():
+        index=VerMap[k][-1]
+        Index2Ver[index]=k[-1]
+
     for k in VerDict.keys():
         VerDictSimple[VerMap[k]]=[]
+        index=VerMap[k][-1]
+        bran=0
         for elem in VerDict[k]:
             left=elem[0]
             right=elem[1]
             VerDictSimple[VerMap[k]].append((VerMap[left], VerMap[right]))
+            BuildTree[index, bran, :]=[k[1], VerMap[left][-1], VerMap[right][-1]] 
+            bran+=1
 
-    return VerDictSimple
+    for o in range(Order):
+        ver=[e for e in VerMap.values() if e[1]==o]
+        for i in range(len(ver)):
+            VerTable[o, i]=ver[i][-1]
+
+    return VerDictSimple, Index2Ver, BuildTree, VerTable
 
 if __name__=="__main__":
     ObjectList=[S, C, R, L, U]
@@ -224,14 +285,17 @@ if __name__=="__main__":
         pass
     print "Total Vertex ", sum([len(e) for e in VerDict.values()])
 
-    VerDictSimple=Compress(VerDict)
+    VerDictSimple, Index2Ver, BuildTree, VerTable=Compress(VerDict)
 
     for k in VerDictSimple.keys():
-        print "{0} : {1}".format(k, VerDictSimple[k])
+        # print "{0} : {1}".format(k, VerDictSimple[k])
         pass
     print "Total terms ", sum([len(e) for e in VerDictSimple.values()])
     # print VerMap
     print len(VerMap.keys())
+    # print Index2Ver
+    # print BuildTree[4,...]
+    TestConnection(BuildTree, VerTable, Index2Ver)
 
     
 
