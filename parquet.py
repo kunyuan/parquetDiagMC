@@ -6,13 +6,15 @@ import random
 from numpy.linalg import matrix_rank
 import itertools 
 import sys,os
+import unittest
+from nullspace import rank, nullspace
 
 # permutation meaning:
 # l_in ---> Per[0]
 # r_in ---> Per[0]
 # l_out=-1, r_out=-2
 
-Order=4
+Order=5
 I, S, C, R, L, U, Gamma={}, {}, {}, {}, {}, {}, {}
 
 for i in range(1,Order+1):
@@ -184,8 +186,34 @@ def GetSelfEnergy(order, TotalGamma):
         del new2[1]
 
         SelfEnergy.append(tuple(new2))
-
     return SelfEnergy
+
+def swap(array, i, j):
+    array = list(array)
+    array[i], array[j] = array[j], array[i]
+    return tuple(array)
+
+def swap_interaction(permutation, m, n, k, l):
+    permutation = list(permutation)
+    mp,np,kp,lp=(permutation.index(e) for e in (m,n,k,l))
+    permutation[mp]=k
+    permutation[kp]=m
+    permutation[np]=l
+    permutation[lp]=n
+    permutation[m],permutation[k]=permutation[k],permutation[m]
+    permutation[n],permutation[l]=permutation[l],permutation[n]
+    return tuple(permutation)
+
+def swap_LR(permutation, i, j):
+    # print permutation, i, j
+    permutation = list(permutation)
+    ip,jp=permutation.index(i),permutation.index(j)
+    permutation[ip]=j
+    permutation[jp]=i
+    permutation[i],permutation[j]=permutation[j],permutation[i]
+    # print "after", permutation
+    return tuple(permutation)
+
 
 def Test(Collection):
     if len(Collection)!=len(set(Collection)):
@@ -230,6 +258,87 @@ def TestConnection(BuildTree, VerTable, Index2Ver):
     print "Operation Num: {0}".format(OperNum)
     # print WeightTable
 
+def TestSelfEnergyDiag(SelfEnergy):
+    Diag={}
+    for d in SelfEnergy: 
+        dd=list(d)
+        dd[d.index(-1)]=d[0]
+        dd=dd[1:]
+        Diag[tuple(dd)]=None
+
+    PermutationDict=dict(Diag)
+    for permutation in Diag.keys():
+        del PermutationDict[permutation]
+        order = len(permutation)/2
+        measure_in=permutation[0]
+
+        Deformation = [permutation]
+        for idx in range(1, Order):
+            if idx==measure_in:
+                continue
+            for i in range(len(Deformation)):
+                for j in range(idx):
+                    if j==measure_in:
+                        continue
+                    Deformation.append(swap_interaction(Deformation[i], idx*2, idx*2+1, j*2, j*2+1))
+
+        for idx in range(Order):
+            if idx==measure_in:
+                continue
+            for i in range(len(Deformation)):
+                Deformation.append(swap_LR(Deformation[i], idx*2, idx*2+1))
+
+        Deformation = set(Deformation)
+        for p in Deformation:
+            if p in PermutationDict:
+                print "Duplicate diagram is found! {0}, {1}".format(permutation, p)
+                del PermutationDict[p]
+                sys.exit(0)
+
+        kG, kW=AssignMomentums(permutation)
+
+        for i in range(0,len(kG)):
+            if abs(kG[i])<1e-10:
+                print "Tadpole detected!", permutation
+                sys.exit(0)
+
+            for j in range(i+1,len(kG)):
+                if abs(kG[i]-kG[j])<1e-10:
+                    print "Same k on G for {0}: {1} on {2}; {3} on {4}".format(permutation, kG[i],i,kG[j],j)
+                    # print "Same k on W for {0}: {1}; 1, {2}".format(p, kG[i],kG[j])
+                    sys.exit(0)
+
+        #check reducibility
+    return
+
+def AssignMomentums(permutation):
+    N=len(permutation)/2
+    vectors=FindIndependentK(permutation)
+    freedoms=vectors.shape[1]
+    karray=np.array([random.random() for _ in range(freedoms)])
+    kVector=np.dot(vectors, karray)
+    # kVector=vectors[:,0]
+    return kVector[:2*N], kVector[2*N:]
+
+def FindIndependentK(permutation):
+    # kList=[(random.randint(0, Nmax), random.randint(0,Nmax)) for i in range(len(InteractionPairs)+1)]
+    N=len(permutation)/2
+    Matrix=np.zeros((2*N,3*N))
+    for i in range(2*N):
+        interaction=int(i/2)+2*N
+        sign=i%2
+        Matrix[i,interaction]=-(-1)**sign
+        Matrix[i, i]=-1
+        Matrix[i, permutation.index(i)]=1
+    # print Matrix
+    vectors = nullspace(Matrix)
+    # print len(vectors)
+    # print vectors
+    freedoms=vectors.shape[1]
+    if freedoms!=N+1:
+        print "Warning! Rank is wrong for {0} with \n{1}".format(permutation, vectors)
+    return vectors
+
 def Compress(VerDict):
     VerDictSimple={}
     VerNum=len(VerDict.keys())
@@ -264,6 +373,7 @@ def Compress(VerDict):
 
     return VerDictSimple, Index2Ver, BuildTree, VerTable
 
+
 if __name__=="__main__":
     ObjectList=[S, C, R, L, U]
     for order in range(2, Order+1):
@@ -277,6 +387,7 @@ if __name__=="__main__":
     for i in range(1,Order+1):
         print "Gamma diagram number at order {0}:{1}".format(i, len(Gamma[i])) 
     Test(SelfEnergy)
+    TestSelfEnergyDiag(SelfEnergy)
     # print "Self Energy:", SelfEnergy
     print "Total Self Energy diagram number", len(SelfEnergy)
 
