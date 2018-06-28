@@ -14,7 +14,7 @@ from nullspace import rank, nullspace
 # r_in ---> Per[0]
 # l_out=-1, r_out=-2
 
-Order=5
+Order=2
 I, S, C, R, L, U, Gamma={}, {}, {}, {}, {}, {}, {}
 
 for i in range(1,Order+1):
@@ -36,7 +36,7 @@ VerMap={}
 VerIndex=0
 
 def GetVer(diag):
-    return (diag[0], diag[1], diag.index(-1)+diag[0], diag.index(-2)+diag[0])
+    return (diag[0], diag[1], diag.index(-1)+diag[0]-2, diag.index(-2)+diag[0]-2)
 
 for e in I[1]:
     VerDict[(1, 0, GetVer(e))]=[]
@@ -134,6 +134,8 @@ def Operation(Type, orderL, orderR):
                 RVer=(FindIndex(gamma, orderR), orderR-1, GetVer(gamma))
                 if (LVer, RVer) not in VerDict[NewVer]:
                     VerDict[NewVer].append((LVer, RVer))
+
+                print LVer, RVer, "tooooooooooo", NewVer
                 # Index+=1
     # print Type[order]
 
@@ -345,9 +347,9 @@ def Compress(VerDict):
     BranchNum=max([len(e) for e in VerDict.values()])
     print BranchNum
     Index2Ver=np.zeros((VerNum, 4), dtype=int) #l_in, r_in, l_out, r_out
-    BuildTree=np.zeros((VerNum, BranchNum, 3), dtype=int) #VerIndex, BranchIndex, Type/LeftVer/RightVer
+    BuildTree=np.zeros((VerNum, BranchNum, 7), dtype=int) #VerIndex, BranchIndex, Type/LeftVer/RightVer/lver_l_out/lver_r_out/rver_l_in/rver_r_in
     BuildTree-=1
-    VerTable=np.zeros((Order, VerNum), dtype=int)
+    VerTable=np.zeros((Order, VerNum), dtype=int) #for a given order, what are the vertex
     VerTable-=1
 
     # for k in sorted(VerDict.keys(), key = lambda x: x[1]):
@@ -363,7 +365,9 @@ def Compress(VerDict):
             left=elem[0]
             right=elem[1]
             VerDictSimple[VerMap[k]].append((VerMap[left], VerMap[right]))
-            BuildTree[index, bran, :]=[k[1], VerMap[left][-1], VerMap[right][-1]] 
+            print left
+            BuildTree[index, bran, :]=[k[1], VerMap[left][-1], VerMap[right][-1], left[-1][-2], left[-1][-1], right[-1][0], right[-1][1]] 
+            print [k[1], VerMap[left][-1], VerMap[right][-1], left[-1][-2], left[-1][-1], right[-1][0], right[-1][1]], left, right
             bran+=1
 
     for o in range(Order):
@@ -404,8 +408,9 @@ if __name__=="__main__":
     print "Total terms ", sum([len(e) for e in VerDictSimple.values()])
     # print VerMap
     print len(VerMap.keys())
-    # print Index2Ver
-    # print BuildTree[4,...]
+    print Index2Ver
+    print BuildTree[:,...]
+    print VerTable
     TestConnection(BuildTree, VerTable, Index2Ver)
 
     
