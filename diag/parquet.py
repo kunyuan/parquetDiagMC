@@ -365,9 +365,9 @@ def Compress(VerDict):
             left=elem[0]
             right=elem[1]
             VerDictSimple[VerMap[k]].append((VerMap[left], VerMap[right]))
-            print left
+            # print left
             BuildTree[index, bran, :]=[k[1], VerMap[left][-1], VerMap[right][-1], left[-1][-2], left[-1][-1], right[-1][0], right[-1][1]] 
-            print [k[1], VerMap[left][-1], VerMap[right][-1], left[-1][-2], left[-1][-1], right[-1][0], right[-1][1]], left, right
+            # print [k[1], VerMap[left][-1], VerMap[right][-1], left[-1][-2], left[-1][-1], right[-1][0], right[-1][1]], left, right
             bran+=1
 
     for o in range(Order):
@@ -409,8 +409,9 @@ if __name__=="__main__":
     # print VerMap
     print len(VerMap.keys())
     print Index2Ver
-    print BuildTree[:,...]
+    print BuildTree[4,...]
     print VerTable
+    np.savez("table.npz", buildtree=BuildTree, vertable=VerTable)
     TestConnection(BuildTree, VerTable, Index2Ver)
 
     

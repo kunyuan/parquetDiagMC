@@ -1,15 +1,10 @@
-# Prerequisites
-*.d
-
+# Created by .gitignore support plugin (hsz.mobi)
+### C++ template
 # Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
 
 # Compiled Dynamic libraries
 *.so
@@ -18,7 +13,6 @@
 
 # Fortran module files
 *.mod
-*.smod
 
 # Compiled Static libraries
 *.lai
@@ -30,3 +24,55 @@
 *.exe
 *.out
 *.app
+
+# Data
+*.dat
+*.log
+*.gv
+*.txt
+*.pstats
+
+# Figure
+*.png
+*.jpg
+*.ps
+*.eps
+*.pdf
+*.svg
+*.dot
+
+#other
+*.zip
+*.npy
+*.pkl
+*.hkl
+*.npz
+*.pyc
+*.xccheckout
+*.xcuserstate
+doc
+data
+data*
+diagram
+diagram*
+infile
+outfile
+.DS_Store
+*.DS_Store
+build
+Output
+Error
+Debug
+Release
+_job_*
+.ipynb_checkpoints
+.idea
+*/.idea
+src/cmake-build-debug/
+basis.*.txt
+
+*.hkl*
+*.dSYM
+
+Weight.hkl*
+
