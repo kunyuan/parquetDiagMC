@@ -140,3 +140,6 @@ svd.Save("FermiBasis.dat")
 svd=basis.SVDBasis(MaxTauBin,Beta, "Bose")
 svd.GenerateBasis(BasisNum)
 svd.Save("BoseBasis.dat")
+
+import os
+os.system("./diag/parquet.py "+str(Order-1))
